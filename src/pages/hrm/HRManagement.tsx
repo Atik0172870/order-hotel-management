@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Card, 
@@ -24,7 +24,8 @@ import {
   DollarSign, 
   Clock,
   MoreVertical,
-  Search
+  Search,
+  User
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,16 +34,100 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import { toast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 const staff = [
-  { id: '1', name: 'James Wilson', position: 'Front Desk Manager', department: 'Front Office', status: 'Full-time', shift: 'Morning' },
-  { id: '2', name: 'Sarah Johnson', position: 'Chef', department: 'Kitchen', status: 'Full-time', shift: 'Evening' },
-  { id: '3', name: 'Robert Brown', position: 'Housekeeping Supervisor', department: 'Housekeeping', status: 'Full-time', shift: 'Morning' },
-  { id: '4', name: 'Jessica Smith', position: 'Waitress', department: 'F&B', status: 'Part-time', shift: 'Evening' },
-  { id: '5', name: 'Michael Davis', position: 'Maintenance Technician', department: 'Maintenance', status: 'Full-time', shift: 'Morning' },
-  { id: '6', name: 'Emma Wilson', position: 'Receptionist', department: 'Front Office', status: 'Part-time', shift: 'Night' },
-  { id: '7', name: 'David Clark', position: 'Security Officer', department: 'Security', status: 'Full-time', shift: 'Night' },
+  { 
+    id: '1', 
+    firstName: 'James', 
+    lastName: 'Wilson', 
+    name: 'James Wilson', 
+    position: 'Front Desk Manager', 
+    department: 'Front Office', 
+    status: 'Full-time', 
+    shift: 'Morning',
+    image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952'
+  },
+  { 
+    id: '2', 
+    firstName: 'Sarah', 
+    lastName: 'Johnson', 
+    name: 'Sarah Johnson', 
+    position: 'Chef', 
+    department: 'Kitchen', 
+    status: 'Full-time', 
+    shift: 'Evening',
+    image: null
+  },
+  { 
+    id: '3', 
+    firstName: 'Robert', 
+    lastName: 'Brown', 
+    name: 'Robert Brown', 
+    position: 'Housekeeping Supervisor', 
+    department: 'Housekeeping', 
+    status: 'Full-time', 
+    shift: 'Morning',
+    image: null
+  },
+  { 
+    id: '4', 
+    firstName: 'Jessica', 
+    lastName: 'Smith', 
+    name: 'Jessica Smith', 
+    position: 'Waitress', 
+    department: 'F&B', 
+    status: 'Part-time', 
+    shift: 'Evening',
+    image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81' 
+  },
+  { 
+    id: '5', 
+    firstName: 'Michael', 
+    lastName: 'Davis', 
+    name: 'Michael Davis', 
+    position: 'Maintenance Technician', 
+    department: 'Maintenance', 
+    status: 'Full-time', 
+    shift: 'Morning',
+    image: null
+  },
+  { 
+    id: '6', 
+    firstName: 'Emma', 
+    lastName: 'Wilson', 
+    name: 'Emma Wilson', 
+    position: 'Receptionist', 
+    department: 'Front Office', 
+    status: 'Part-time', 
+    shift: 'Night',
+    image: null
+  },
+  { 
+    id: '7', 
+    firstName: 'David', 
+    lastName: 'Clark', 
+    name: 'David Clark', 
+    position: 'Security Officer', 
+    department: 'Security', 
+    status: 'Full-time', 
+    shift: 'Night',
+    image: null
+  },
 ];
 
 const schedules = [
@@ -62,7 +147,55 @@ const leaveRequests = [
   { id: '4', staffName: 'Michael Davis', type: 'Personal Leave', startDate: '2025-06-10', endDate: '2025-06-12', status: 'Pending' },
 ];
 
+const getInitials = (firstName: string, lastName: string) => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+};
+
+const getRandomColor = (name: string) => {
+  const colors = [
+    'bg-blue-100 text-blue-600',
+    'bg-purple-100 text-purple-600',
+    'bg-green-100 text-green-600',
+    'bg-amber-100 text-amber-600',
+    'bg-pink-100 text-pink-600',
+    'bg-indigo-100 text-indigo-600',
+    'bg-cyan-100 text-cyan-600',
+  ];
+  
+  // Simple hash function to determine color based on name
+  const hashCode = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hashCode % colors.length];
+};
+
 const HRManagement = () => {
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const filteredStaff = staff.filter(person => 
+    person.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    person.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    person.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const handleViewProfile = (employee: any) => {
+    setSelectedEmployee(employee);
+    setIsViewModalOpen(true);
+  };
+  
+  const handleEditDetails = (employee: any) => {
+    setSelectedEmployee(employee);
+    setIsEditModalOpen(true);
+  };
+  
+  const handleManageSchedule = (employee: any) => {
+    toast({
+      title: "Schedule Management",
+      description: `Managing schedule for ${employee.name}`,
+    });
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -84,7 +217,7 @@ const HRManagement = () => {
                 <ClipboardList className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <CardTitle>7</CardTitle>
+                <CardTitle>{staff.length}</CardTitle>
                 <CardDescription>Total Staff</CardDescription>
               </div>
             </div>
@@ -112,7 +245,7 @@ const HRManagement = () => {
                 <Clock className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <CardTitle>2</CardTitle>
+                <CardTitle>{leaveRequests.length}</CardTitle>
                 <CardDescription>Leave Requests</CardDescription>
               </div>
             </div>
@@ -137,7 +270,12 @@ const HRManagement = () => {
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search staff..." className="pl-10 w-[250px]" />
+                  <Input 
+                    placeholder="Search staff..." 
+                    className="pl-10 w-[250px]" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
             </CardHeader>
@@ -145,7 +283,7 @@ const HRManagement = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead className="w-[250px]">Name</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Status</TableHead>
@@ -154,9 +292,22 @@ const HRManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {staff.map((person) => (
+                  {filteredStaff.map((person) => (
                     <TableRow key={person.id}>
-                      <TableCell className="font-medium">{person.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar>
+                            {person.image ? (
+                              <AvatarImage src={person.image} alt={person.name} />
+                            ) : (
+                              <AvatarFallback className={getRandomColor(person.name)}>
+                                {getInitials(person.firstName, person.lastName)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <span className="font-medium">{person.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{person.position}</TableCell>
                       <TableCell>{person.department}</TableCell>
                       <TableCell>
@@ -174,9 +325,16 @@ const HRManagement = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Profile</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                            <DropdownMenuItem>Manage Schedule</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewProfile(person)}>
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditDetails(person)}>
+                              Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleManageSchedule(person)}>
+                              Manage Schedule
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -312,6 +470,153 @@ const HRManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* View Profile Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Employee Profile</DialogTitle>
+            <DialogDescription>
+              View employee details
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEmployee && (
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center justify-center mb-4">
+                <Avatar className="h-24 w-24">
+                  {selectedEmployee.image ? (
+                    <AvatarImage src={selectedEmployee.image} alt={selectedEmployee.name} />
+                  ) : (
+                    <AvatarFallback className={`${getRandomColor(selectedEmployee.name)} text-xl`}>
+                      {getInitials(selectedEmployee.firstName, selectedEmployee.lastName)}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Full Name</Label>
+                  <div className="font-medium">{selectedEmployee.name}</div>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Position</Label>
+                  <div className="font-medium">{selectedEmployee.position}</div>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Department</Label>
+                  <div className="font-medium">{selectedEmployee.department}</div>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>
+                    <Badge variant={selectedEmployee.status === 'Full-time' ? 'default' : 'secondary'}>
+                      {selectedEmployee.status}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Shift</Label>
+                  <div className="font-medium">{selectedEmployee.shift}</div>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Employee ID</Label>
+                  <div className="font-medium">{selectedEmployee.id}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            <Button onClick={() => {
+              setIsViewModalOpen(false);
+              handleEditDetails(selectedEmployee);
+            }}>Edit Details</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Details Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogDescription>
+              Update employee information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEmployee && (
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center justify-center mb-4">
+                <Avatar className="h-24 w-24">
+                  {selectedEmployee.image ? (
+                    <AvatarImage src={selectedEmployee.image} alt={selectedEmployee.name} />
+                  ) : (
+                    <AvatarFallback className={`${getRandomColor(selectedEmployee.name)} text-xl`}>
+                      {getInitials(selectedEmployee.firstName, selectedEmployee.lastName)}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </div>
+              
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" defaultValue={selectedEmployee.firstName} />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" defaultValue={selectedEmployee.lastName} />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="position">Position</Label>
+                  <Input id="position" defaultValue={selectedEmployee.position} />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input id="department" defaultValue={selectedEmployee.department} />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Input id="status" defaultValue={selectedEmployee.status} />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="shift">Shift</Label>
+                    <Input id="shift" defaultValue={selectedEmployee.shift} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setIsEditModalOpen(false);
+              toast({
+                title: "Success",
+                description: "Employee details updated successfully",
+              });
+            }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
